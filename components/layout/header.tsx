@@ -1,5 +1,7 @@
 "use client"
-
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useCartStore } from "@/store/cart"
 import Link from "next/link"
 import { Search, ShoppingCart, Heart, Menu, Sun, Moon } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -13,6 +15,9 @@ import {
 
 export function Header() {
   const { theme, setTheme } = useTheme()
+  const totalItems = useCartStore((state) => state.totalItems())
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-primary text-primary-foreground">
@@ -23,15 +28,25 @@ export function Header() {
         </Link>
 
         {/* Axtarış - Desktop */}
-        <div className="hidden flex-1 max-w-md mx-6 md:flex">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Məhsul axtar..."
-              className="w-full pl-10 bg-background text-foreground"
-            />
-          </div>
-        </div>
+<div className="hidden flex-1 max-w-md mx-6 md:flex">
+  <form
+    onSubmit={(e) => {
+      e.preventDefault()
+      if (searchQuery.trim()) {
+        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      }
+    }}
+    className="relative w-full"
+  >
+    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <Input
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Məhsul axtar..."
+      className="w-full pl-10 bg-background text-foreground"
+    />
+  </form>
+</div>
 
         {/* Sağ tərəf ikonları */}
         <div className="flex items-center gap-2">
@@ -65,9 +80,11 @@ export function Header() {
     className="text-primary-foreground hover:bg-primary/80"
   >
     <ShoppingCart className="h-5 w-5" />
-    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-      0
-    </span>
+    {totalItems > 0 && (
+  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+    {totalItems}
+  </span>
+)}
   </Button>
 </Link>
 

@@ -17,8 +17,35 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Dəyərli Tap",
-  description: "Bakı və Sumqayıtda yeni və seçilmiş ikinci əl əşyaların satış mərkəzi",
+  title: {
+    default: "Dəyərli Tap – Yeni və İkinci Əl Əşyalar",
+    template: "%s | Dəyərli Tap",
+  },
+  description:
+    "Bakı və Sumqayıtda yeni və seçilmiş ikinci əl əşyaların satış mərkəzi. Antikvar, elektronika, mebel və digər nadir tapıntılar.",
+  keywords: [
+    "ikinci əl",
+    "yeni əşya",
+    "antikvar",
+    "Bakı",
+    "Sumqayıt",
+    "mebel",
+    "elektronika",
+    "Dəyərli Tap",
+  ],
+  authors: [{ name: "Dəyərli Tap" }],
+  openGraph: {
+    type: "website",
+    locale: "az_AZ",
+    siteName: "Dəyərli Tap",
+    title: "Dəyərli Tap – Yeni və İkinci Əl Əşyalar",
+    description:
+      "Bakı və Sumqayıtda yeni və seçilmiş ikinci əl əşyaların satış mərkəzi.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
