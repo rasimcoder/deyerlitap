@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -14,6 +15,9 @@ const allowedStatuses = [
 ]
 
 export async function PATCH(request: NextRequest, { params }: Props) {
+  if (!(await isAdminAuthenticated())) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+}
   const { id } = await params
   const body = await request.json()
 

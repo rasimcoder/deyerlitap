@@ -42,6 +42,14 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+  fetch("/api/admin/me").then((r) => {
+    if (!r.ok) {
+      window.location.href = "/admin"
+    }
+  })
+}, [])
+
   const load = () => {
     fetch("/api/admin/orders")
       .then((r) => r.json())

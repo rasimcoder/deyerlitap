@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import cloudinary from "@/lib/cloudinary"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminAuthenticated())) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+}
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File | null

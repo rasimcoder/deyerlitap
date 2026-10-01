@@ -20,6 +20,14 @@ export default function AdminCategoriesPage() {
   const [form, setForm] = useState({ name: "", slug: "", description: "" })
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+  fetch("/api/admin/me").then((r) => {
+    if (!r.ok) {
+      window.location.href = "/admin"
+    }
+  })
+}, [])
+
   const load = async () => {
     const res = await fetch("/api/admin/categories?withCount=1")
     const data = await res.json()

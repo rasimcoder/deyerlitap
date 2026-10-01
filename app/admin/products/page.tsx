@@ -23,6 +23,14 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+  fetch("/api/admin/me").then((r) => {
+    if (!r.ok) {
+      window.location.href = "/admin"
+    }
+  })
+}, [])
+
   const loadProducts = async () => {
     const res = await fetch("/api/admin/products")
     const data = await res.json()
@@ -44,6 +52,7 @@ export default function AdminProductsPage() {
   if (loading) {
     return <p>Yüklənir...</p>
   }
+
 
   return (
     <div>

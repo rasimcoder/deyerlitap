@@ -28,6 +28,14 @@ export default function NewProductPage() {
   })
 
   useEffect(() => {
+  fetch("/api/admin/me").then((r) => {
+    if (!r.ok) {
+      window.location.href = "/admin"
+    }
+  })
+}, [])
+
+  useEffect(() => {
     fetch("/api/admin/categories")
       .then((r) => r.json())
       .then(setCategories)

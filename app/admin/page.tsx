@@ -10,14 +10,14 @@ export default function AdminPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("admin-token")
-      if (token === "authenticated") {
-        setIsLoggedIn(true)
-      }
-    }
+    fetch("/api/admin/me")
+      .then((r) => {
+        if (r.ok) setIsLoggedIn(true)
+      })
+      .finally(() => setChecking(false))
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,8 +37,16 @@ export default function AdminPage() {
       return
     }
 
-    localStorage.setItem("admin-token", "authenticated")
     setIsLoggedIn(true)
+  }
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" })
+    setIsLoggedIn(false)
+  }
+
+  if (checking) {
+    return <p className="text-center text-muted-foreground">Yoxlanılır...</p>
   }
 
   if (!isLoggedIn) {
@@ -67,7 +75,13 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Button variant="outline" size="sm" onClick={handleLogout}>
+          Çıxış
+        </Button>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         <button
           onClick={() => router.push("/admin/products")}

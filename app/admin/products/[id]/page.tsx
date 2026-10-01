@@ -32,6 +32,14 @@ export default function EditProductPage() {
   })
 
   useEffect(() => {
+  fetch("/api/admin/me").then((r) => {
+    if (!r.ok) {
+      window.location.href = "/admin"
+    }
+  })
+}, [])
+
+  useEffect(() => {
     Promise.all([
       fetch("/api/admin/categories").then((r) => r.json()),
       fetch(`/api/admin/products/${id}`).then((r) => r.json()),

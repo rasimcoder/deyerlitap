@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
 
 export async function GET(request: NextRequest) {
+  if (!(await isAdminAuthenticated())) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+}
   const withCount = request.nextUrl.searchParams.get("withCount")
 
   const categories = await prisma.category.findMany({
@@ -15,6 +19,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminAuthenticated())) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+}
   const body = await request.json()
 
   if (!body.name || !body.slug) {
