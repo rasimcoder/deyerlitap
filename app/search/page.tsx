@@ -1,30 +1,42 @@
 "use client"
 
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Search as SearchIcon } from "lucide-react"
-import { products } from "@/data/products"
 import { ProductCard } from "@/components/product/product-card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Product } from "@/types/product"
 
 function SearchContent() {
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get("q") || ""
 
   const [query, setQuery] = useState(initialQuery)
+  const [results, setResults] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const results = useMemo(() => {
-    if (!query.trim()) return []
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([])
+      return
+    }
 
-    const lower = query.toLowerCase().trim()
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
+        const data = await res.json()
+        setResults(data)
+      } catch (error) {
+        console.error(error)
+        setResults([])
+      } finally {
+        setLoading(false)
+      }
+    }, 300)
 
-    return products.filter(
-      (p) =>
-        p.title.toLowerCase().includes(lower) ||
-        p.category.toLowerCase().includes(lower) ||
-        p.condition.toLowerCase().includes(lower)
-    )
+    return () => clearTimeout(timer)
   }, [query])
 
   return (
@@ -32,9 +44,7 @@ function SearchContent() {
       <h1 className="mb-6 text-2xl font-bold sm:text-3xl">Axtarış</h1>
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
+        onSubmit={(e) => e.preventDefault()}
         className="mb-8 flex gap-2"
       >
         <div className="relative flex-1">
@@ -50,7 +60,11 @@ function SearchContent() {
         <Button type="submit">Axtar</Button>
       </form>
 
-      {!query.trim() ? (
+      {loading ? (
+        <div className="rounded-xl border bg-card p-12 text-center">
+          <p className="text-muted-foreground">Axtarılır...</p>
+        </div>
+      ) : !query.trim() ? (
         <div className="rounded-xl border bg-card p-12 text-center">
           <p className="text-muted-foreground">
             Axtarmaq istədiyiniz sözü yazın

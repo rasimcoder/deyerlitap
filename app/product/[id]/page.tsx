@@ -1,14 +1,14 @@
-import { WishlistButton } from "@/components/product/wishlist-button"
-import { AddToCartButton } from "@/components/product/add-to-cart-button"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ShoppingCart, ArrowLeft } from "lucide-react"
-import { products } from "@/data/products"
+import type { Metadata } from "next"
+import { ArrowLeft } from "lucide-react"
+import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import type { Metadata } from "next"
+import { AddToCartButton } from "@/components/product/add-to-cart-button"
+import { WishlistButton } from "@/components/product/wishlist-button"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -16,17 +16,15 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const product = products.find((p) => p.id === id)
+  const product = await prisma.product.findUnique({ where: { id } })
 
   if (!product) {
-    return {
-      title: "Məhsul tapılmadı",
-    }
+    return { title: "Məhsul tapılmadı" }
   }
 
   return {
     title: product.title,
-    description: `${product.title} – ${product.price} ₼. ${product.condition} vəziyyətdə. Dəyərli Tap-da satılır.`,
+    description: `${product.title} – ${product.price} ₼. ${product.condition} vəziyyətdə.`,
     openGraph: {
       title: product.title,
       description: `${product.price} ₼ – ${product.condition}`,
@@ -35,12 +33,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-
 export default async function ProductPage({ params }: Props) {
   const { id } = await params
-  const product = products.find((p) => p.id === id)
 
-  if (!product) {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: { category: true },
+  })
+
+  if (!product || !product.isActive) {
     notFound()
   }
 
@@ -48,14 +49,17 @@ export default async function ProductPage({ params }: Props) {
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0
 
-  // Oxşar məhsullar (eyni kateqoriyadan, özündən başqa)
-  const related = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4)
+  const related = await prisma.product.findMany({
+    where: {
+      categoryId: product.categoryId,
+      id: { not: product.id },
+      isActive: true,
+    },
+    take: 4,
+  })
 
   return (
     <div className="container py-8">
-      {/* Geri düyməsi */}
       <Link
         href="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
@@ -65,7 +69,7 @@ export default async function ProductPage({ params }: Props) {
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Sol tərəf - Şəkil */}
+        {/* Şəkil */}
         <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
           <Image
             src={product.image}
@@ -77,7 +81,7 @@ export default async function ProductPage({ params }: Props) {
           />
         </div>
 
-        {/* Sağ tərəf - Məlumat */}
+        {/* Məlumat */}
         <div className="flex flex-col">
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
@@ -88,7 +92,9 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{product.condition}</Badge>
-            <Badge variant="outline">{product.category}</Badge>
+            {product.category && (
+              <Badge variant="outline">{product.category.name}</Badge>
+            )}
             {discount > 0 && (
               <Badge className="bg-accent text-accent-foreground">
                 -{discount}% endirim
@@ -110,9 +116,9 @@ export default async function ProductPage({ params }: Props) {
           <Separator className="my-6" />
 
           <div className="space-y-4 text-sm text-muted-foreground">
+            {product.description && <p>{product.description}</p>}
             <p>
               Bu məhsul <strong>{product.condition.toLowerCase()}</strong> vəziyyətdədir.
-              Ətraflı məlumat üçün bizimlə əlaqə saxlaya bilərsiniz.
             </p>
             <p>
               Bakı və Sumqayıta <strong>pulsuz çatdırılma</strong> mövcuddur.
@@ -120,11 +126,11 @@ export default async function ProductPage({ params }: Props) {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-  <AddToCartButton product={product} />
-  <Button size="lg" variant="outline" className="flex-1">
-    Zəng et: 070 528-28-92
-  </Button>
-</div>
+            <AddToCartButton product={product} />
+            <Button size="lg" variant="outline" className="flex-1">
+              Zəng et: 070 528-28-92
+            </Button>
+          </div>
         </div>
       </div>
 

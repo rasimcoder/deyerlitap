@@ -38,7 +38,7 @@ export default function CheckoutPage() {
   }
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
@@ -54,27 +54,37 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true)
 
-    // Müvəqqəti: sifarişi console-a yazırıq + localStorage-a saxlayırıq
-    const order = {
-      id: Date.now().toString(),
-      items,
-      total: totalPrice(),
-      customer: form,
-      createdAt: new Date().toISOString(),
-      status: "pending",
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          items: items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+          })),
+          total: totalPrice(),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Xəta baş verdi")
+        setIsSubmitting(false)
+        return
+      }
+
+      clearCart()
+      router.push(`/order-success?id=${data.id}`)
+    } catch {
+      setError("Şəbəkə xətası. Yenidən cəhd edin.")
+      setIsSubmitting(false)
     }
-
-    console.log("Yeni sifariş:", order)
-
-    // LocalStorage-a da yaza bilərik (sonra admin panel üçün)
-    const existingOrders = JSON.parse(localStorage.getItem("deyerlitap-orders") || "[]")
-    localStorage.setItem("deyerlitap-orders", JSON.stringify([...existingOrders, order]))
-
-    // Səbəti təmizlə
-    clearCart()
-
-    // Uğur səhifəsinə yönləndir
-    router.push(`/order-success?id=${order.id}`)
   }
 
   return (
@@ -82,7 +92,6 @@ export default function CheckoutPage() {
       <h1 className="mb-8 text-2xl font-bold sm:text-3xl">Sifarişi rəsmiləşdir</h1>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Forma */}
         <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
           <div className="rounded-xl border bg-card p-6 space-y-4">
             <h2 className="text-lg font-semibold">Çatdırılma məlumatları</h2>
@@ -154,16 +163,13 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Göndərilir..." : "Sifarişi təsdiqlə"}
           </Button>
         </form>
 
-        {/* Xülasə */}
         <div className="h-fit rounded-xl border bg-card p-6">
           <h2 className="text-lg font-semibold">Sifariş xülasəsi</h2>
           <Separator className="my-4" />

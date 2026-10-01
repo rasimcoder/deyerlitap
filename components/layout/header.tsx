@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCartStore } from "@/store/cart"
 import Link from "next/link"
 import { Search, ShoppingCart, Heart, Menu, Sun, Moon } from "lucide-react"
@@ -15,9 +15,32 @@ import {
 
 export function Header() {
   const { theme, setTheme } = useTheme()
-  const totalItems = useCartStore((state) => state.totalItems())
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+  const totalItemsFromStore = useCartStore((state) => state.totalItems())
+  const [mounted, setMounted] = useState(false)
+  const [categories, setCategories] = useState<NavCategory[]>([])
+
+useEffect(() => {
+  setMounted(true)
+}, [])
+
+const totalItems = mounted ? totalItemsFromStore : 0
+
+type NavCategory = {
+  id: string
+  name: string
+  slug: string
+}
+
+
+
+useEffect(() => {
+  fetch("/api/categories")
+    .then((r) => r.json())
+    .then(setCategories)
+    .catch(() => setCategories([]))
+}, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-primary text-primary-foreground">
@@ -95,37 +118,70 @@ export function Header() {
   </SheetTrigger>
 
   <SheetContent side="left" className="w-72">
-    <nav className="flex flex-col gap-4 mt-8">
-      <Link href="/" className="text-lg font-medium hover:text-accent transition">
-        Ana səhifə
-      </Link>
-      <Link href="/categories" className="text-lg font-medium hover:text-accent transition">
-        Kateqoriyalar
-      </Link>
-      <Link href="/wishlist" className="text-lg font-medium hover:text-accent transition">
+  <nav className="flex flex-col gap-4 mt-8">
+    <Link href="/" className="text-lg font-medium hover:text-accent transition">
+      Ana səhifə
+    </Link>
+    <Link
+      href="/categories"
+      className="text-lg font-medium hover:text-accent transition"
+    >
+      Bütün kateqoriyalar
+    </Link>
+
+    {categories.length > 0 && (
+      <div className="border-t pt-4 space-y-3">
+        <p className="text-xs font-semibold uppercase text-muted-foreground">
+          Kateqoriyalar
+        </p>
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            href={`/categories/${cat.slug}`}
+            className="block text-base hover:text-accent transition"
+          >
+            {cat.name}
+          </Link>
+        ))}
+      </div>
+    )}
+
+    <div className="border-t pt-4 space-y-3">
+      <Link
+        href="/wishlist"
+        className="block text-lg font-medium hover:text-accent transition"
+      >
         Bəyəndiklərim
       </Link>
-      <Link href="/cart" className="text-lg font-medium hover:text-accent transition">
+      <Link
+        href="/cart"
+        className="block text-lg font-medium hover:text-accent transition"
+      >
         Səbət
       </Link>
-    </nav>
-  </SheetContent>
+    </div>
+  </nav>
+</SheetContent>
 </Sheet>
         </div>
       </div>
 
-      {/* Kateqoriya zolağı - Desktop */}
-      <div className="hidden border-t border-primary-foreground/10 bg-primary/95 md:block">
-        <div className="container mx-auto flex items-center gap-6 overflow-x-auto px-4 py-2 text-sm">
-          <Link href="/categories/yeni" className="whitespace-nowrap hover:text-accent transition">Yeni</Link>
-          <Link href="/categories/isinmis" className="whitespace-nowrap hover:text-accent transition">İşlənmiş</Link>
-          <Link href="/categories/elektronika" className="whitespace-nowrap hover:text-accent transition">Elektronika</Link>
-          <Link href="/categories/neqliyyat" className="whitespace-nowrap hover:text-accent transition">Nəqliyyat</Link>
-          <Link href="/categories/ev-ve-bag" className="whitespace-nowrap hover:text-accent transition">Ev və Bağ</Link>
-          <Link href="/categories/sexsi-esya" className="whitespace-nowrap hover:text-accent transition">Şəxsi Əşyalar</Link>
-          <Link href="/categories/diger" className="whitespace-nowrap hover:text-accent transition">Digər</Link>
-        </div>
-      </div>
+     {/* Kateqoriya zolağı - Desktop */}
+{categories.length > 0 && (
+  <div className="hidden border-t border-primary-foreground/10 bg-primary/95 md:block">
+    <div className="container mx-auto flex items-center gap-6 overflow-x-auto px-4 py-2 text-sm">
+      {categories.map((cat) => (
+        <Link
+          key={cat.id}
+          href={`/categories/${cat.slug}`}
+          className="whitespace-nowrap hover:text-accent transition"
+        >
+          {cat.name}
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
     </header>
   )
 }
