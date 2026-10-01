@@ -26,6 +26,7 @@ model Product {
   image       String
   images      String[]
   condition   String
+  stock       Int        @default(1)
   isFeatured  Boolean    @default(false)
   isActive    Boolean    @default(true)
   categoryId  String

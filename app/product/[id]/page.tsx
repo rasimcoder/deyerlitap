@@ -112,6 +112,13 @@ export default async function ProductPage({ params }: Props) {
               </span>
             )}
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+  {product.stock > 0 ? (
+    <>Stokda: <strong>{product.stock}</strong> ədəd</>
+  ) : (
+    <span className="text-destructive font-medium">Stokda yoxdur</span>
+  )}
+</p>
 
           <Separator className="my-6" />
 

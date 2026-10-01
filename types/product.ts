@@ -7,6 +7,7 @@ export type Product = {
   image: string
   images: string[]
   condition: string
+  stock: number
   isFeatured: boolean
   isActive: boolean
   categoryId: string

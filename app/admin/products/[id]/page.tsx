@@ -15,6 +15,7 @@ export default function EditProductPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  
 
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +30,7 @@ export default function EditProductPage() {
     categoryId: "",
     isFeatured: false,
     isActive: true,
+    stock: "1",
   })
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function EditProductPage() {
           categoryId: product.categoryId || "",
           isFeatured: product.isFeatured || false,
           isActive: product.isActive !== false,
+          stock: String(product.stock ?? 1),
         })
       }
       setLoading(false)

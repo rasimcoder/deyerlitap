@@ -11,15 +11,19 @@ type Props = {
 
 export function AddToCartButton({ product }: Props) {
   const addItem = useCartStore((state) => state.addItem)
+  const isOutOfStock = product.stock <= 0
 
   return (
     <Button
       size="lg"
       className="flex-1 gap-2"
-      onClick={() => addItem(product)}
+      disabled={isOutOfStock}
+      onClick={() => {
+        if (!isOutOfStock) addItem(product)
+      }}
     >
       <ShoppingCart className="h-5 w-5" />
-      Səbətə at
+      {isOutOfStock ? "Stokda yoxdur" : "Səbətə at"}
     </Button>
   )
 }

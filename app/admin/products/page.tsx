@@ -17,6 +17,7 @@ type Product = {
   isFeatured: boolean
   isActive: boolean
   category: { name: string } | null
+  stock: number
 }
 
 export default function AdminProductsPage() {
@@ -86,7 +87,7 @@ export default function AdminProductsPage() {
               <h3 className="font-medium truncate">{product.title}</h3>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">
-                  {product.price} ₼
+                  {product.price} ₼  <span>• Stok: {product.stock}</span>
                 </span>
                 {product.category && <span>• {product.category.name}</span>}
                 <Badge variant="secondary" className="text-xs">

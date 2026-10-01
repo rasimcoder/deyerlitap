@@ -25,6 +25,7 @@ export default function NewProductPage() {
     categoryId: "",
     isFeatured: false,
     isActive: true,
+    stock: "1",
   })
 
   useEffect(() => {
@@ -104,6 +105,17 @@ export default function NewProductPage() {
               onChange={(e) => setForm({ ...form, oldPrice: e.target.value })}
             />
           </div>
+
+          <div>
+  <label className="mb-1.5 block text-sm font-medium">Stok *</label>
+  <Input
+    type="number"
+    min={0}
+    value={form.stock}
+    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+    required
+  />
+</div>
         </div>
 
         <div>

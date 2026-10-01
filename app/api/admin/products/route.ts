@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       isFeatured: body.isFeatured || false,
       isActive: body.isActive !== false,
       categoryId: body.categoryId,
+      stock: Number(body.stock ?? 1),
     },
   })
 

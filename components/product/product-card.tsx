@@ -40,6 +40,12 @@ export function ProductCard({ product }: ProductCardProps) {
         >
           {product.condition}
         </Badge>
+
+        {product.stock <= 0 && (
+          <Badge variant="destructive" className="absolute left-2 bottom-2">
+            Bitib
+          </Badge>
+        )}
       </Link>
 
       {/* Məlumat */}
