@@ -35,6 +35,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
       description: body.description || null,
       price: Number(body.price),
       oldPrice: body.oldPrice ? Number(body.oldPrice) : null,
+      costPrice: Number(body.costPrice ?? 0),
       image: body.image,
       images: body.images || [],
       condition: body.condition,

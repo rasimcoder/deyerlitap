@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      // Sifariş yarat + hər item-ə maya dəyərini yaz
       return tx.order.create({
         data: {
           fullName,
@@ -42,20 +43,30 @@ export async function POST(request: NextRequest) {
           total: Number(total),
           status: "pending",
           items: {
-            create: items.map(
-              (item: {
-                id: string
-                title: string
-                price: number
-                quantity: number
-                image: string
-              }) => ({
-                productId: item.id,
-                title: item.title,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image,
-              })
+            create: await Promise.all(
+              items.map(
+                async (item: {
+                  id: string
+                  title: string
+                  price: number
+                  quantity: number
+                  image: string
+                }) => {
+                  const product = await tx.product.findUnique({
+                    where: { id: item.id },
+                    select: { costPrice: true },
+                  })
+
+                  return {
+                    productId: item.id,
+                    title: item.title,
+                    price: item.price,
+                    costPrice: product?.costPrice ?? 0,
+                    quantity: item.quantity,
+                    image: item.image,
+                  }
+                }
+              )
             ),
           },
         },

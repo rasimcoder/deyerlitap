@@ -26,15 +26,16 @@ export default function NewProductPage() {
     isFeatured: false,
     isActive: true,
     stock: "1",
+    costPrice: "0",
   })
 
   useEffect(() => {
-  fetch("/api/admin/me").then((r) => {
-    if (!r.ok) {
-      window.location.href = "/admin"
-    }
-  })
-}, [])
+    fetch("/api/admin/me").then((r) => {
+      if (!r.ok) {
+        window.location.href = "/admin"
+      }
+    })
+  }, [])
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -107,23 +108,34 @@ export default function NewProductPage() {
           </div>
 
           <div>
-  <label className="mb-1.5 block text-sm font-medium">Stok *</label>
-  <Input
-    type="number"
-    min={0}
-    value={form.stock}
-    onChange={(e) => setForm({ ...form, stock: e.target.value })}
-    required
-  />
-</div>
+            <label className="mb-1.5 block text-sm font-medium">Maya dəyəri (₼)</label>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.costPrice}
+              onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Stok *</label>
+            <Input
+              type="number"
+              min={0}
+              value={form.stock}
+              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              required
+            />
+          </div>
         </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium">Şəkil URL *</label>
-         <ImageUpload
-  value={form.image}
-  onChange={(url) => setForm({ ...form, image: url })}
-/>
+          <ImageUpload
+            value={form.image}
+            onChange={(url) => setForm({ ...form, image: url })}
+          />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

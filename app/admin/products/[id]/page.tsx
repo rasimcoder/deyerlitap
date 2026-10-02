@@ -25,6 +25,7 @@ export default function EditProductPage() {
     description: "",
     price: "",
     oldPrice: "",
+    costPrice: "0",
     image: "",
     condition: "İşlənmiş",
     categoryId: "",
@@ -59,6 +60,7 @@ export default function EditProductPage() {
           isFeatured: product.isFeatured || false,
           isActive: product.isActive !== false,
           stock: String(product.stock ?? 1),
+          costPrice: String(product.costPrice ?? 0),
         })
       }
       setLoading(false)
@@ -116,6 +118,17 @@ export default function EditProductPage() {
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
+
+        <div>
+  <label className="mb-1.5 block text-sm font-medium">Maya dəyəri (₼)</label>
+  <Input
+    type="number"
+    min={0}
+    step="0.01"
+    value={form.costPrice}
+    onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+  />
+</div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

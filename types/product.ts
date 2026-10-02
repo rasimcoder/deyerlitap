@@ -11,6 +11,7 @@ export type Product = {
   isFeatured: boolean
   isActive: boolean
   categoryId: string
+  costPrice?: number | null
   category?: {
     id: string
     name: string
