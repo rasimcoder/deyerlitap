@@ -1,5 +1,10 @@
 "use client"
-import { SalesTrendChart, SalesByYearChart } from "@/components/admin/sales-charts"
+import {
+  SalesTrendChart,
+  SalesByYearChart,
+  CategoryPieChart,
+  TopProductsTable,
+} from "@/components/admin/sales-charts"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -45,6 +50,14 @@ export default function AdminPage() {
     { year: string; revenue: number; orders: number }[]
   >([])
 
+  const [topCategories, setTopCategories] = useState<
+    { name: string; revenue: number; quantity: number }[]
+  >([])
+  const [topProducts, setTopProducts] = useState<
+    { title: string; revenue: number; quantity: number }[]
+  >([])
+
+
   useEffect(() => {
     fetch("/api/admin/me")
       .then((r) => {
@@ -61,8 +74,10 @@ export default function AdminPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.kpis) setKpis(data.kpis)
-        if (data.salesOverTime) setSalesOverTime(data.salesOverTime)
-        if (data.salesByYear) setSalesByYear(data.salesByYear)
+      if (data.salesOverTime) setSalesOverTime(data.salesOverTime)
+      if (data.salesByYear) setSalesByYear(data.salesByYear)
+      if (data.topCategories) setTopCategories(data.topCategories)
+      if (data.topProducts) setTopProducts(data.topProducts)
       })
       .finally(() => setLoadingKpis(false))
   }, [isLoggedIn, range])
@@ -211,6 +226,12 @@ export default function AdminPage() {
               orders: y.orders,
             }))}
           />
+          {!loadingKpis && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <CategoryPieChart data={topCategories} />
+              <TopProductsTable data={topProducts} />
+            </div>
+          )}
         </div>
       )}
       {/* Qısa keçidlər */}

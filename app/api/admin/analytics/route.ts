@@ -91,11 +91,13 @@ export async function GET(request: NextRequest) {
           total: true,
           createdAt: true,
           items: {
-            select: {
-              price: true,
-              costPrice: true,
-              quantity: true,
-            },
+          select: {
+        title: true,
+        price: true,
+        costPrice: true,
+        quantity: true,
+        productId: true,
+      },
           },
         },
         orderBy: { createdAt: "asc" },
@@ -153,7 +155,80 @@ export async function GET(request: NextRequest) {
     yearMap.set(y, prev)
   }
 
-  const salesByYear = Array.from(yearMap.entries())
+    // --- Top məhsullar ---
+  const productMap = new Map<
+    string,
+    { title: string; quantity: number; revenue: number }
+  >()
+
+  for (const o of soldOrders) {
+    for (const item of o.items) {
+      const key = item.productId
+      const prev = productMap.get(key) || {
+        title: item.title,
+        quantity: 0,
+        revenue: 0,
+      }
+      prev.quantity += item.quantity
+      prev.revenue += item.price * item.quantity
+      productMap.set(key, prev)
+    }
+  }
+
+  const topProducts = Array.from(productMap.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10)
+    .map((p) => ({
+      title: p.title,
+      quantity: p.quantity,
+      revenue: Math.round(p.revenue * 100) / 100,
+    }))
+
+  // --- Top kateqoriyalar ---
+  const productIds = [...productMap.keys()]
+  const productsWithCat =
+    productIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            category: { select: { name: true } },
+          },
+        })
+      : []
+
+  const catByProduct = new Map(
+    productsWithCat.map((p) => [p.id, p.category?.name || "Digər"])
+  )
+
+  const categoryMap = new Map<
+    string,
+    { name: string; quantity: number; revenue: number }
+  >()
+
+  for (const o of soldOrders) {
+    for (const item of o.items) {
+      const catName = catByProduct.get(item.productId) || "Digər"
+      const prev = categoryMap.get(catName) || {
+        name: catName,
+        quantity: 0,
+        revenue: 0,
+      }
+      prev.quantity += item.quantity
+      prev.revenue += item.price * item.quantity
+      categoryMap.set(catName, prev)
+    }
+  }
+
+  const topCategories = Array.from(categoryMap.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .map((c) => ({
+      name: c.name,
+      quantity: c.quantity,
+      revenue: Math.round(c.revenue * 100) / 100,
+    }))
+
+    const salesByYear = Array.from(yearMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([year, v]) => ({
       year,
@@ -174,6 +249,8 @@ export async function GET(request: NextRequest) {
     },
     salesOverTime,
     salesByYear,
+    topProducts,
+    topCategories,
     range,
   })
 }
