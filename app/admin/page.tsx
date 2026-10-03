@@ -30,6 +30,7 @@ const RANGE_OPTIONS = [
   { value: "last_month", label: "Keçən ay" },
   { value: "last_year", label: "Keçən il" },
   { value: "all", label: "Bütün vaxt" },
+  { value: "custom", label: "Xüsusi aralıq" },
 ]
 
 export default function AdminPage() {
@@ -42,6 +43,9 @@ export default function AdminPage() {
   const [range, setRange] = useState("month")
   const [kpis, setKpis] = useState<Kpis | null>(null)
   const [loadingKpis, setLoadingKpis] = useState(false)
+
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
 
   const [salesOverTime, setSalesOverTime] = useState<
     { label: string; revenue: number; orders: number }[]
@@ -67,20 +71,32 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    if (!isLoggedIn) return
+  if (!isLoggedIn) return
 
-    setLoadingKpis(true)
-    fetch(`/api/admin/analytics?range=${range}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.kpis) setKpis(data.kpis)
+  // Xüsusi aralıq seçilibsə, hər iki tarix dolu olmalıdır
+  if (range === "custom" && (!fromDate || !toDate)) {
+    return
+  }
+
+  setLoadingKpis(true)
+
+  const params = new URLSearchParams({ range })
+  if (range === "custom") {
+    params.set("from", fromDate)
+    params.set("to", toDate)
+  }
+
+  fetch(`/api/admin/analytics?${params.toString()}`)
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.kpis) setKpis(data.kpis)
       if (data.salesOverTime) setSalesOverTime(data.salesOverTime)
       if (data.salesByYear) setSalesByYear(data.salesByYear)
       if (data.topCategories) setTopCategories(data.topCategories)
       if (data.topProducts) setTopProducts(data.topProducts)
-      })
-      .finally(() => setLoadingKpis(false))
-  }, [isLoggedIn, range])
+    })
+    .finally(() => setLoadingKpis(false))
+}, [isLoggedIn, range, fromDate, toDate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -141,23 +157,48 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-          >
-            {RANGE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            Çıxış
-          </Button>
-        </div>
+        <div className="flex flex-wrap items-center gap-3">
+  <select
+    value={range}
+    onChange={(e) => setRange(e.target.value)}
+    className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+  >
+    {RANGE_OPTIONS.map((opt) => (
+      <option key={opt.value} value={opt.value}>
+        {opt.label}
+      </option>
+    ))}
+  </select>
+
+  {range === "custom" && (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        type="date"
+        value={fromDate}
+        onChange={(e) => setFromDate(e.target.value)}
+        className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+      />
+      <span className="text-sm text-muted-foreground">–</span>
+      <input
+        type="date"
+        value={toDate}
+        onChange={(e) => setToDate(e.target.value)}
+        className="flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+      />
+    </div>
+  )}
+
+  <Button variant="outline" size="sm" onClick={handleLogout}>
+    Çıxış
+  </Button>
+</div>
       </div>
+
+      {range === "custom" && (!fromDate || !toDate) && (
+  <p className="text-sm text-muted-foreground">
+    Statistika üçün başlanğıc və bitiş tarixini seçin.
+  </p>
+)}
 
       {/* KPI Cards */}
       {loadingKpis || !kpis ? (
