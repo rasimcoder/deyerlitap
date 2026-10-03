@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { isAdminAuthenticated } from "@/lib/admin-auth"
+import { requireAdminMutation, requireAdminRead } from "@/lib/admin-guard"
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
 export async function GET(_req: NextRequest, { params }: Props) {
-  if (!(await isAdminAuthenticated())) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-}
+  const gate = await requireAdminRead()
+  if (!gate.ok) return gate.response
+
   const { id } = await params
   const product = await prisma.product.findUnique({
     where: { id },
@@ -22,9 +22,9 @@ export async function GET(_req: NextRequest, { params }: Props) {
 }
 
 export async function PUT(request: NextRequest, { params }: Props) {
-  if (!(await isAdminAuthenticated())) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-}
+  const gate = await requireAdminMutation(request)
+  if (!gate.ok) return gate.response
+
   const { id } = await params
   const body = await request.json()
 
@@ -49,10 +49,10 @@ export async function PUT(request: NextRequest, { params }: Props) {
   return NextResponse.json(product)
 }
 
-export async function DELETE(_req: NextRequest, { params }: Props) {
-   if (!(await isAdminAuthenticated())) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-}
+export async function DELETE(request: NextRequest, { params }: Props) {
+  const gate = await requireAdminMutation(request)
+  if (!gate.ok) return gate.response
+
   const { id } = await params
   await prisma.product.delete({ where: { id } })
   return NextResponse.json({ success: true })

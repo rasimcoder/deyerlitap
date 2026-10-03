@@ -111,9 +111,9 @@ export default function AdminPage() {
     const data = await res.json()
 
     if (!res.ok) {
-      setError(data.error || "Şifrə yanlışdır")
-      return
-    }
+  setError(data.error || "Şifrə yanlışdır")
+  return
+}
 
     setIsLoggedIn(true)
   }

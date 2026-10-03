@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { isAdminAuthenticated } from "@/lib/admin-auth"
+import { requireAdminMutation } from "@/lib/admin-guard"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -15,9 +15,8 @@ const allowedStatuses = [
 ]
 
 export async function PATCH(request: NextRequest, { params }: Props) {
-  if (!(await isAdminAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const gate = await requireAdminMutation(request)
+  if (!gate.ok) return gate.response
 
   const { id } = await params
   const body = await request.json()
@@ -38,49 +37,51 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   const oldStatus = existing.status
   const newStatus = body.status as string
 
-  // Eyni statusdursa heç nə etmə
   if (oldStatus === newStatus) {
     return NextResponse.json(existing)
   }
 
-  const order = await prisma.$transaction(async (tx) => {
-    // Ləğv edildi → stoku geri qaytar (yalnız əvvəl ləğv edilməyibsə)
-    if (newStatus === "cancelled" && oldStatus !== "cancelled") {
-      for (const item of existing.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        })
-      }
-    }
-
-    // Ləğvdən başqa statusa qayıtdı → stoku yenidən azalt
-    // (məsələn cancelled → pending)
-    if (oldStatus === "cancelled" && newStatus !== "cancelled") {
-      for (const item of existing.items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        })
-
-        if (!product || product.stock < item.quantity) {
-          throw new Error(
-            `"${item.title}" üçün kifayət qədər stok yoxdur (geri aktivləşdirmək mümkün deyil)`
-          )
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      if (newStatus === "cancelled" && oldStatus !== "cancelled") {
+        for (const item of existing.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          })
         }
-
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        })
       }
-    }
 
-    return tx.order.update({
-      where: { id },
-      data: { status: newStatus },
-      include: { items: true },
+      if (oldStatus === "cancelled" && newStatus !== "cancelled") {
+        for (const item of existing.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          })
+
+          if (!product || product.stock < item.quantity) {
+            throw new Error(
+              `"${item.title}" üçün kifayət qədər stok yoxdur (geri aktivləşdirmək mümkün deyil)`
+            )
+          }
+
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          })
+        }
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: { status: newStatus },
+        include: { items: true },
+      })
     })
-  })
 
-  return NextResponse.json(order)
+    return NextResponse.json(order)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Status yenilənmədi"
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { isAdminAuthenticated } from "@/lib/admin-auth"
+import { requireAdminRead } from "@/lib/admin-guard"
 
 const SOLD_STATUSES = ["confirmed", "shipped", "delivered"]
 
@@ -35,7 +35,15 @@ function getDateRange(range: string, from?: string | null, to?: string | null) {
     }
     case "last_month": {
       const gte = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const lte = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+      const lte = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        0,
+        23,
+        59,
+        59,
+        999
+      )
       return { gte, lte }
     }
     case "last_year": {
@@ -47,7 +55,10 @@ function getDateRange(range: string, from?: string | null, to?: string | null) {
     }
     case "custom": {
       if (from && to) {
-        return { gte: startOfDay(new Date(from)), lte: endOfDay(new Date(to)) }
+        return {
+          gte: startOfDay(new Date(from)),
+          lte: endOfDay(new Date(to)),
+        }
       }
       return null
     }
@@ -66,9 +77,8 @@ function formatMonth(d: Date) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await isAdminAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const gate = await requireAdminRead()
+  if (!gate.ok) return gate.response
 
   const { searchParams } = request.nextUrl
   const range = searchParams.get("range") || "month"
@@ -82,41 +92,45 @@ export async function GET(request: NextRequest) {
     ...(dateFilter ? { createdAt: dateFilter } : {}),
   }
 
-  const [soldOrders, pendingOrders, activeProducts, outOfStock, allSoldForYears] =
-    await Promise.all([
-      prisma.order.findMany({
-        where: orderWhere,
-        select: {
-          id: true,
-          total: true,
-          createdAt: true,
-          items: {
+  const [
+    soldOrders,
+    pendingOrders,
+    activeProducts,
+    outOfStock,
+    allSoldForYears,
+  ] = await Promise.all([
+    prisma.order.findMany({
+      where: orderWhere,
+      select: {
+        id: true,
+        total: true,
+        createdAt: true,
+        items: {
           select: {
-        title: true,
-        price: true,
-        costPrice: true,
-        quantity: true,
-        productId: true,
-      },
+            title: true,
+            price: true,
+            costPrice: true,
+            quantity: true,
+            productId: true,
           },
         },
-        orderBy: { createdAt: "asc" },
-      }),
-      prisma.order.count({ where: { status: "pending" } }),
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.product.count({ where: { stock: { lte: 0 } } }),
-      prisma.order.findMany({
-        where: { status: { in: SOLD_STATUSES } },
-        select: { total: true, createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
-    ])
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.order.count({ where: { status: "pending" } }),
+    prisma.product.count({ where: { isActive: true } }),
+    prisma.product.count({ where: { stock: { lte: 0 } } }),
+    prisma.order.findMany({
+      where: { status: { in: SOLD_STATUSES } },
+      select: { total: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ])
 
   const revenue = soldOrders.reduce((sum, o) => sum + o.total, 0)
   const ordersCount = soldOrders.length
   const averageOrder = ordersCount > 0 ? revenue / ordersCount : 0
 
-  // Xalis qazanc
   let profit = 0
   for (const o of soldOrders) {
     for (const item of o.items) {
@@ -127,7 +141,6 @@ export async function GET(request: NextRequest) {
   const margin =
     revenue > 0 ? Math.round((profit / revenue) * 1000) / 10 : 0
 
-  // salesOverTime
   const useDaily = ["today", "week", "month", "last_month"].includes(range)
   const bucketMap = new Map<string, { revenue: number; orders: number }>()
 
@@ -145,7 +158,6 @@ export async function GET(request: NextRequest) {
     orders: v.orders,
   }))
 
-  // salesByYear
   const yearMap = new Map<string, { revenue: number; orders: number }>()
   for (const o of allSoldForYears) {
     const y = String(o.createdAt.getFullYear())
@@ -155,7 +167,6 @@ export async function GET(request: NextRequest) {
     yearMap.set(y, prev)
   }
 
-    // --- Top məhsullar ---
   const productMap = new Map<
     string,
     { title: string; quantity: number; revenue: number }
@@ -184,7 +195,6 @@ export async function GET(request: NextRequest) {
       revenue: Math.round(p.revenue * 100) / 100,
     }))
 
-  // --- Top kateqoriyalar ---
   const productIds = [...productMap.keys()]
   const productsWithCat =
     productIds.length > 0
@@ -228,7 +238,7 @@ export async function GET(request: NextRequest) {
       revenue: Math.round(c.revenue * 100) / 100,
     }))
 
-    const salesByYear = Array.from(yearMap.entries())
+  const salesByYear = Array.from(yearMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([year, v]) => ({
       year,

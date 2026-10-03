@@ -2,10 +2,40 @@ import { NextRequest, NextResponse } from "next/server"
 import cloudinary from "@/lib/cloudinary"
 import { isAdminAuthenticated } from "@/lib/admin-auth"
 
+function isAllowedOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin")
+  if (!origin) return false
+
+  const allowed = new Set<string>([
+    request.nextUrl.origin,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ])
+
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    try {
+      allowed.add(new URL(process.env.NEXT_PUBLIC_SITE_URL).origin)
+    } catch {
+      // ignore
+    }
+  }
+
+  if (process.env.VERCEL_URL) {
+    allowed.add(`https://${process.env.VERCEL_URL}`)
+  }
+
+  return allowed.has(origin)
+}
+
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-}
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: "Invalid origin" }, { status: 403 })
+  }
+
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File | null
@@ -14,7 +44,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Fayl tapılmadı" }, { status: 400 })
     }
 
-    // Yalnız şəkil
     if (!file.type.startsWith("image/")) {
       return NextResponse.json(
         { error: "Yalnız şəkil yükləyə bilərsiniz" },
@@ -22,7 +51,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Max 5MB
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
         { error: "Şəkil maksimum 5MB ola bilər" },
