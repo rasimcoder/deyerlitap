@@ -191,7 +191,7 @@ export function TopProductsTable({ data }: { data: ProductPoint[] }) {
   return (
     <div className="rounded-xl border bg-card p-6">
       <h3 className="mb-4 font-semibold">Top məhsullar</h3>
-      <div className="overflow-x-auto">
+      <div className="max-h-80 overflow-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
@@ -205,8 +205,10 @@ export function TopProductsTable({ data }: { data: ProductPoint[] }) {
             {data.map((p, i) => (
               <tr key={i} className="border-b last:border-0">
                 <td className="py-2.5 pr-2 text-muted-foreground">{i + 1}</td>
-                <td className="py-2.5 pr-2 font-medium line-clamp-1 max-w-[200px]">
-                  {p.title}
+                <td className="py-2.5 pr-3 font-medium min-w-[140px] max-w-[280px]">
+                  <span className="block break-words leading-snug" title={p.title}>
+                    {p.title}
+                  </span>
                 </td>
                 <td className="py-2.5 pr-2 text-right">{p.quantity}</td>
                 <td className="py-2.5 text-right font-semibold">
